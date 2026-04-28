@@ -51,7 +51,7 @@
             if ((u === 'User' && p === '123abc') || (u === 'Root' && p === 'Password')) {
                 localStorage.setItem('auth_d6', 'true');
                 localStorage.setItem('user_role', u);
-                window.location.href = 'dashboard.html';
+                window.location.href = '/Territorial-D6/dashboard.html';
             } else {
                 document.getElementById('err').classList.remove('hidden');
             }
