@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Territorial | Distrito 6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Protección de ruta
+        if(localStorage.getItem('auth_d6') !== 'true') window.location.href = 'index.html';
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <nav class="bg-white border-b p-4 px-8 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-lg">SK</div>
+            <div>
+                <span class="block text-sm font-black italic text-slate-800">SYSTEMAS KOFFY'S</span>
+                <span class="text-[9px] text-blue-500 font-bold uppercase tracking-widest" id="roleDisplay"></span>
+            </div>
+        </div>
+        <button onclick="localStorage.clear(); location.href='index.html'" class="text-[10px] font-black text-slate-400 hover:text-red-500 transition uppercase tracking-widest">
+            Salir <i class="fas fa-power-off ml-1"></i>
+        </button>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-10 px-4">
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
+            <div class="border-l-4 border-yellow-400 pl-4">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Control de Asistencia D6</h2>
+                <p class="text-slate-500 text-sm">Matriz detallada de participación (26 Actividades)</p>
+            </div>
+            <div class="w-full md:w-96">
+                <input type="text" id="search" onkeyup="render()" placeholder="🔍 Buscar por nombre o celular..." 
+                    class="w-full p-3 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+                        <tr>
+                            <th class="p-5">Nombre Completo</th>
+                            <th class="p-5 text-center">Celular</th>
+                            <th class="p-5 text-center">Matriz Actividades (1-26)</th>
+                            <th class="p-5 text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody" class="divide-y divide-slate-100 text-sm">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="p-6 bg-slate-50 flex justify-between items-center border-t">
+                <span id="pageInfo" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Página 1</span>
+                <div class="flex gap-2">
+                    <button onclick="changePage(-1)" class="px-6 py-2 bg-white border rounded-xl font-bold text-xs hover:bg-blue-600 hover:text-white transition shadow-sm">ANTERIOR</button>
+                    <button onclick="changePage(1)" class="px-6 py-2 bg-white border rounded-xl font-bold text-xs hover:bg-blue-600 hover:text-white transition shadow-sm">SIGUIENTE</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-10 text-center">
+        <p class="text-slate-300 text-[9px] uppercase font-bold tracking-[0.4em]">Powered by Systemas Koffy's | Tarija 2026</p>
+    </footer>
+
+    <script>
+        document.getElementById('roleDisplay').innerText = "Nivel: " + localStorage.getItem('user_role');
+
+        // BASE DE DATOS (Incluyendo historial de 26 actividades)
+        const brigadistas = [
+            {n: "ELA COLQUECHAMBI", c: "75141546", p: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0], t: 24},
+            {n: "GISELA MARIA VEDIA", c: "64599273", p: [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,0,0], t: 21},
+            {n: "MARCELO ORTEGA VELASQUEZ", c: "77874599", p: [1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,0,0,0,0], t: 19},
+            {n: "ENILDA JURADO", c: "76195912", p: [1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,1,1,0,0,0,0,0,0], t: 18},
+            {n: "JULIO MOLINA VARGAS", c: "67431109", p: [1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0], t: 18}
+        ];
+
+        // Autorelleno para test de 338 registros
+        for(let i=6; i<=338; i++) {
+            brigadistas.push({
+                n: "BRIGADISTA NOMINADO " + i, 
+                c: "70000000", 
+                p: Array.from({length: 26}, () => Math.random() > 0.6 ? 1 : 0),
+                t: Math.floor(Math.random() * 26)
+            });
+        }
+
+        let page = 1;
+        const size = 20;
+
+        function render() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const filtered = brigadistas.filter(i => i.n.toLowerCase().includes(q) || i.c.includes(q));
+            const subset = filtered.slice((page-1)*size, page*size);
+            
+            document.getElementById('tbody').innerHTML = subset.map(item => `
+                <tr class="hover:bg-blue-50/50 transition">
+                    <td class="p-5 font-bold text-slate-800 uppercase italic tracking-tight">${item.n}</td>
+                    <td class="p-5 text-center font-mono text-blue-600 font-bold">${item.c}</td>
+                    <td class="p-5">
+                        <div class="flex flex-wrap gap-1 justify-center max-w-[180px] mx-auto">
+                            ${item.p.map(a => `<div class="w-2 h-2 rounded-sm ${a ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-slate-200'}"></div>`).join('')}
+                        </div>
+                    </td>
+                    <td class="p-5 text-center">
+                        <span class="bg-slate-900 text-white px-2 py-1 rounded text-[10px] font-black">${item.t}/26</span>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('pageInfo').innerText = `Página ${page} de ${Math.ceil(filtered.length / size)}`;
+        }
+
+        function changePage(d) {
+            page += d;
+            if(page < 1) page = 1;
+            render();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        render();
+    </script>
+</body>
+</html>
+
